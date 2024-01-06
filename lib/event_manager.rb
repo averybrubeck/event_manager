@@ -42,6 +42,16 @@ def clean_phone_numbers(phonenumber)
   phonenumber
 end
 
+def time_targeting(reg_date)
+  begin
+    formatted_date = DateTime.strptime(reg_date,"%m/%d/%y %H:%M")
+  rescue ArgumentError => e
+    puts "Error parsing date: #{e.message}"
+    formatted_date = "0000-00-00 00:00:00"
+  end
+  formatted_date
+end
+
 puts 'EventManager initialized.'
 begin
   contents = CSV.open(
@@ -63,7 +73,8 @@ end
 contents.each do |row|
   id = row [0]
   name = row[:first_name]
-  phone = clean_phone_numbers(row[:phone])
+  phone = clean_phone_numbers(row[:homephone])
+  time = time_targeting(row[:regdate])
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
   form_letter = erb_template.result(binding)
