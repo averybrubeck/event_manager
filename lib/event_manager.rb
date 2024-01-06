@@ -1,23 +1,39 @@
 require 'csv'
+require 'google/apis/civicinfo_v2'
 
-def clean_zipcode(zip)
-  zip.to_s.rjust(5, '0')[0..4]
+civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
+civic_info.key = 'AIzaSyClRzDqDh5MsXwnCWi0kOiiBivP6JsSyBw'
+
+def clean_zipcode(zipcode)
+  zipcode.to_s.rjust(5, '0')[0..4]
 end
 
-puts 'Event Manager Initialized!'
-
+puts 'EventManager initialized.'
 begin
   contents = CSV.open(
     'event_attendees.csv',
     headers: true,
     header_converters: :symbol
-)
-
-  contents.each do |row|
-    name = row[:first_name]
-    zip = clean_zipcode(row[:zipcode])
-    puts "#{name}, #{zip}"
-  end
+  )
 rescue Errno::ENOENT
-  puts 'File Not Found'
+  puts 'File not found'
+end
+
+contents.each do |row|
+  name = row[:first_name]
+  zipcode = clean_zipcode(row[:zipcode])
+
+  begin
+    legislators = civic_info.representative_info_by_address(
+      address: zipcode,
+      levels: 'country',
+      roles: ['legislatorUpperBody', 'legislatorLowerBody']
+    )
+    legislators = legislators.officials
+  rescue StandardError => e
+    "An error occured #{e.message} You can find your representatives by visiting
+    www.commoncause.org/take-action/find-elected-officials"
+  end
+
+  puts "#{name} #{zipcode} #{legislators}"
 end
